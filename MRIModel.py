@@ -9,10 +9,36 @@ from keras.layers.core import Dense, Dropout, Activation, Flatten
 from keras.layers.advanced_activations import PReLU  
 from keras.layers.convolutional import Convolution2D, MaxPooling2D,Conv3D,MaxPooling3D
 from keras.optimizers import SGD, Adadelta, Adagrad  
-from keras.utils import np_utils, generic_utils  
+from keras.utils import np_utils, generic_utils
+import os
 from six.moves import range  
 import tensorflow as tf
-sess = tf.InteractiveSession()
+#import GPUtil
+# Get the first available GPU
+'''
+DEVICE_ID_LIST = GPUtil.getFirstAvailable()
+DEVICE_ID = DEVICE_ID_LIST[0] # grab first element from list
+
+# Set CUDA_VISIBLE_DEVICES to mask out all other GPUs than the first available device id
+os.environ["CUDA_VISIBLE_DEVICES"] = str(DEVICE_ID)
+
+# Since all other GPUs are masked out, the first available GPU will now be identified as GPU:0
+device = '/gpu:0'
+print('Device ID (unmasked): ' + str(DEVICE_ID))
+print('Device ID (masked): ' + str(0))
+
+# Creates a graph.
+with tf.device(device):
+  a = tf.placeholder(tf.float32, shape=(4096, 4096))
+  b = tf.placeholder(tf.float32, shape=(4096, 4096))
+  c = tf.matmul(a, b)
+# Creates a session with log_device_placement set to True.
+config = tf.ConfigProto(log_device_placement=True, allow_soft_placement=True)
+config.gpu_options.allow_growth=True
+'''
+#os.chdir('/Users/anthony/tx/689Project')
+#sess = tf.InteractiveSession()
+
 c = 0
 def load_mri_images(filename):
     global c
@@ -22,7 +48,7 @@ def load_mri_images(filename):
     tmp = c
     c = tmp + 1
     
-    print ('Loaded image set %d of 37.' %c)
+    print ('Loaded image set %d of 65.' %c)
     
     return data
 def imgwise_3d_scaling(data):
@@ -37,52 +63,54 @@ def imgwise_3d_scaling(data):
     
     return data
 
-train_label=np.zeros((19,3))
+train_label=np.zeros((45,3))
 train_data = np.array([], np.float32)
-train_data = np.append(train_data, np.asarray(load_mri_images('AD1.nii'), dtype='float32'))
+train_data = np.append(train_data, np.asarray(load_mri_images('AD (1).nii'), dtype='float32'))
 train_label[0][0]=1
-for i in range(2,6):
-    train_cur = load_mri_images('AD%d.nii' %i)
+for i in range(2,16):
+    train_cur = load_mri_images('AD (%d).nii' %i)
     train_data = np.append(train_data, np.asarray(train_cur, dtype='float32'))
     train_label[i-1][0]=1
-for i in range(1,9):
-    train_cur = load_mri_images('MCI%d.nii' %i)
+for i in range(1,16):
+    train_cur = load_mri_images('MCI (%d).nii' %i)
     train_data = np.append(train_data, np.asarray(train_cur, dtype='float32'))
-    train_label[4+i][1]=1
-for i in range(1,7):
-    train_cur = load_mri_images('N%d.nii' %i)
+    train_label[14+i][1]=1
+for i in range(1,16):
+    train_cur = load_mri_images('Normal (%d).nii' %i)
     train_data = np.append(train_data, np.asarray(train_cur, dtype='float32'))
-    train_label[12+i][2]=1
-train_data = train_data.reshape(19,256,256,166)
+    train_label[29+i][2]=1
+train_data = train_data.reshape(45,1,256,256,166)
+'''
 val_data=np.array([], np.float32)
 val_label=np.zeros((7,3))
 val_data = np.append(val_data, np.asarray(load_mri_images('AD6.nii'), dtype='float32'))
 val_label[0]=1
 for i in range(7,9):
-    valid_cur = load_mri_images('AD%d.nii' %i)
+    valid_cur = load_mri_images('AD(%d).nii' %i)
     val_data = np.append(val_data, np.asarray(valid_cur, dtype='float32'))
     val_label[i-6][0]=1
 for i in range(9,11):
-    valid_cur = load_mri_images('MCI%d.nii' %i)
+    valid_cur = load_mri_images('MCI(%d).nii' %i)
     val_data = np.append(val_data, np.asarray(valid_cur, dtype='float32'))
     val_label[i-6][1]=1
 for i in range(7,9):
-    valid_cur = load_mri_images('N%d.nii' %i)
+    valid_cur = load_mri_images('Normal(%d).nii' %i)
     val_data = np.append(val_data, np.asarray(valid_cur, dtype='float32'))
     val_label[i-2][2]=1
-val_data = val_data.reshape(7,256,256,166)
+val_data = val_data.reshape(7,1,256,256,166)
+'''
 test_data=np.array([], np.float32)
-test_data = np.append(test_data, np.asarray(load_mri_images('AD9.nii'), dtype='float32'))
-for i in range(10,12):
-    test_cur = load_mri_images('AD%d.nii' %i)
+test_data = np.append(test_data, np.asarray(load_mri_images('AD (16).nii'), dtype='float32'))
+for i in range(17,20):
+    test_cur = load_mri_images('AD (%d).nii' %i)
     test_data = np.append(test_data, np.asarray(test_cur, dtype='float32'))
-for i in range(11,15):
-    test_cur = load_mri_images('MCI%d.nii' %i)
+for i in range(16,20):
+    test_cur = load_mri_images('MCI (%d).nii' %i)
     test_data = np.append(test_data, np.asarray(test_cur, dtype='float32'))
-for i in range(9,13):
-    test_cur = load_mri_images('N%d.nii' %i)
+for i in range(16,28):
+    test_cur = load_mri_images('Normal (%d).nii' %i)
     test_data = np.append(test_data, np.asarray(test_cur, dtype='float32'))
-test_data = test_data.reshape(11,256,256,166)
+test_data = test_data.reshape(20,1,256,256,166)
 
 
     
@@ -92,9 +120,9 @@ if imgwise_scaling:
     for n in range(len(train_data)):
         train_data[n,:,:,:] = train_data[n,:,:,:] - np.mean(train_data[n,:,:,:].flatten())
         train_data[n,:,:,:] = train_data[n,:,:,:] / np.std(train_data[n,:,:,:].flatten())
-    for n in range(len(val_data)):
-        val_data[n,:,:,:] = val_data[n,:,:,:] - np.mean(val_data[n,:,:,:].flatten())
-        val_data[n,:,:,:] = val_data[n,:,:,:] / np.std(val_data[n,:,:,:].flatten())
+#    for n in range(len(val_data)):
+#        val_data[n,:,:,:] = val_data[n,:,:,:] - np.mean(val_data[n,:,:,:].flatten())
+#        val_data[n,:,:,:] = val_data[n,:,:,:] / np.std(val_data[n,:,:,:].flatten())
     for n in range(len(test_data)):
         test_data[n,:,:,:] = test_data[n,:,:,:] - np.mean(test_data[n,:,:,:].flatten())
         test_data[n,:,:,:] = test_data[n,:,:,:] / np.std(test_data[n,:,:,:].flatten())
@@ -105,13 +133,50 @@ depth = 166
 nLabel = 3
 
 
+model = Sequential()
+model.add(Conv3D(32, kernel_size=(3, 3, 3), input_shape=(
+    train_data.shape[1:]), border_mode='same'))
+model.add(Activation('relu'))
+#model.add(Conv3D(32, kernel_size=(3, 3, 3), border_mode='same'))
+#model.add(Activation('softmax'))
+model.add(MaxPooling3D(pool_size=(2, 2, 2), border_mode='same'))
+model.add(Dropout(0.25))
+
+model.add(Conv3D(64, kernel_size=(3, 3, 3), border_mode='same'))
+model.add(Activation('relu'))
+#model.add(Conv3D(64, kernel_size=(3, 3, 3), border_mode='same'))
+#model.add(Activation('softmax'))
+model.add(MaxPooling3D(pool_size=(2, 2, 2), border_mode='same'))
+model.add(Dropout(0.25))
+
+model.add(Conv3D(64, kernel_size=(3, 3, 3), border_mode='same'))
+model.add(Activation('relu'))
+#model.add(Conv3D(64, kernel_size=(3, 3, 3), border_mode='same'))
+#model.add(Activation('softmax'))
+model.add(MaxPooling3D(pool_size=(2, 2, 2), border_mode='same'))
+model.add(Dropout(0.25))
+
+
+model.add(Flatten())
+model.add(Dense(512, activation='sigmoid'))
+model.add(Dropout(0.5))
+model.add(Dense(nLabel, activation='softmax'))
+
+model.compile(loss='categorical_crossentropy',
+              optimizer='Adam', metrics=['accuracy'])
+model.summary()
+model.fit(train_data, train_label, epochs=10, batch_size=40)
+
+
+classes = model.predict(test_data, batch_size=20)
+print (classes)
 
 
 
 
 
+'''
 
-sess = tf.InteractiveSession()
 
 # Placeholders (MNIST image:28x28pixels=784, label=10)
 x = tf.placeholder(tf.float32, shape=[None, width,height,depth]) # [None, 28*28]
@@ -204,3 +269,71 @@ for i in range(100):
     train_step.run(feed_dict={x:train_data, y_: train_label, keep_prob: 0.5})
     
 print("test accuracy %g"%accuracy.eval(feed_dict={x: test_data, y_: test_label, keep_prob: 1.0}))
+
+
+'''
+'''
+model = Sequential()
+# 256 256 166
+# 160*100*22
+model.add(Conv3D(
+    10,
+    kernel_dim1=9, # depth
+    kernel_dim2=9, # rows
+    kernel_dim3=9, # cols
+    input_shape=(3,256,256,166),
+    activation='relu'
+))# now 152*92*14
+
+model.add(MaxPooling3D(
+    pool_size=(2,2)
+))# now 76*46*14
+
+model.add(Conv3D(
+    30,
+    kernel_dim1=7, # depth
+    kernel_dim2=9, # rows
+    kernel_dim3=9, # cols
+    activation='relu'
+))# now 68*38*8
+
+model.add(MaxPooling3D(
+    pool_size=(2,2)
+))# now 34*19*8
+
+model.add(Conv3D(
+    50,
+    kernel_dim1=5, # depth
+    kernel_dim2=9, # rows
+    kernel_dim3=8, # cols
+    activation='relu'
+))# now 26*12*4
+
+model.add(MaxPooling3D(
+    pool_size=(2,2)
+))# now 13*6*4
+
+model.add(Conv3D(
+    150,
+    kernel_dim1=3, # depth
+    kernel_dim2=4, # rows
+    kernel_dim3=3, # cols
+    activation='relu'
+))# now 10*4*2
+
+model.add(MaxPooling3D(
+    pool_size=(2,2)
+))# now 5*2*2
+
+model.add(Dropout(0.25))
+model.add(Flatten())
+
+model.add(Dense(1500,activation='relu'))
+
+model.add(Dense(750,activation='relu'))
+
+model.add(Dense(num,activation='softmax')) #classification
+
+# Compile
+model.compile(loss='categorical_crossentropy', optimizer='RMSprop', metrics=['accuracy'])
+'''
